@@ -97,7 +97,7 @@ var versionSet = app.NewApiVersionSet()
 
 var v1 = app.MapGroup("/api/v1").WithApiVersionSet(versionSet);
 var authGroup = v1.MapGroup("/auth");
-var messageGroup = v1.MapGroup("/messages");
+var messageGroup = v1.MapGroup("/messages").RequireAuthorization();
 
 authGroup.MapAuthEndpoints();
 messageGroup.MapMessageEndpoints();
