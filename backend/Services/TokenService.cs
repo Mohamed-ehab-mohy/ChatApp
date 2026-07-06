@@ -63,8 +63,7 @@ public class TokenService
     public async Task<RefreshToken?> ValidateRefreshToken(string token)
     {
         return await _db.RefreshTokens
-            .Include(rt => rt.User)
-            .FirstOrDefaultAsync(rt => rt.Token == token && rt.IsActive);
+            .FirstOrDefaultAsync(rt => rt.Token == token && rt.RevokedAt == null && DateTime.UtcNow < rt.ExpiresAt);
     }
 
     public async Task RevokeRefreshToken(RefreshToken rt)

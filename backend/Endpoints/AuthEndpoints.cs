@@ -69,7 +69,8 @@ public static class AuthEndpoints
 
         group.MapPost("/refresh", async (
             RefreshTokenRequest request,
-            TokenService tokenService) =>
+            TokenService tokenService,
+            UserManager<AppUser> userManager) =>
         {
             if (string.IsNullOrWhiteSpace(request.RefreshToken))
                 return Results.BadRequest(new { errors = new[] { "Refresh token is required" } });
@@ -78,7 +79,10 @@ public static class AuthEndpoints
             if (stored is null)
                 return Results.Unauthorized();
 
-            var user = stored.User;
+            var user = await userManager.FindByIdAsync(stored.UserId);
+            if (user is null)
+                return Results.Unauthorized();
+
             await tokenService.RevokeRefreshToken(stored);
 
             var newToken = tokenService.GenerateToken(user);
