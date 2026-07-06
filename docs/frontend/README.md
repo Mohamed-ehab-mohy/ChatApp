@@ -14,13 +14,14 @@
 
 ## Authentication Flow
 
-1. **Register** or **Login** via REST → receive `{ token, refreshToken, email, userId }`
-2. Store both the JWT token and refreshToken (localStorage / sessionStorage)
-3. Send token as `Authorization: Bearer <token>` on all REST requests
-4. For SignalR, pass token as `?access_token=<token>` query param
-5. When token expires (60 min), call **Refresh** to get a new pair without re-login
+1. **Register** or **Login** → receive `{ token, email, userId }` in **body**
+2. The **refresh token** is set as an **HttpOnly cookie** (`refresh_token`) — JS cannot read it
+3. Store the **access token** in memory (not localStorage!) — re-fetch from `/refresh` on page reload
+4. Send access token as `Authorization: Bearer <token>` on all REST requests
+5. For SignalR, pass token as `?access_token=<token>` query param
+6. When the access token expires (60 min), call **Refresh** — the browser auto-sends the cookie
 
-> **Access token expires in 60 minutes.** Use the refresh endpoint (below) to get a new one.
+> **Access token expires in 60 minutes.** The HttpOnly cookie refresh token expires in **7 days** and is rotated on each use. This prevents XSS from stealing the refresh token.
 
 ---
 
@@ -50,11 +51,12 @@ Content-Type: application/json
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIs...",
-  "refreshToken": "base64-refresh-token",
   "email": "user@example.com",
   "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
 }
 ```
+
+> A `Set-Cookie: refresh_token=...; HttpOnly; Secure; SameSite=None; Path=/api/v1/auth; Max-Age=604800` header is also sent.
 
 **Validation error `400`:**
 ```json
@@ -95,7 +97,7 @@ Content-Type: application/json
 | `email` | Required, valid email format |
 | `password` | Required |
 
-**Success `200`:** (same shape as Register)
+**Success `200`:** (same shape as Register, also sets `refresh_token` cookie)
 
 ```json
 {
@@ -111,46 +113,58 @@ Content-Type: application/json
 
 ### Refresh Token
 
-Extends the session without re-entering credentials. **Rotates** — old refresh token is revoked, a new pair is issued.
+Extends the session without re-entering credentials. Reads the `refresh_token` **HttpOnly cookie** automatically — no body needed. **Rotates** — old refresh token is revoked, a new one is issued via `Set-Cookie`.
 
 ```
 POST /api/v1/auth/refresh
-Content-Type: application/json
-
-{
-  "refreshToken": "base64-encoded-refresh-token-from-register/login"
-}
 ```
+
+> No body required. The browser auto-sends the `refresh_token` cookie. Send `credentials: 'include'` in fetch.
 
 **Success `200`:**
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIs...",
-  "refreshToken": "new-base64-refresh-token",
   "email": "user@example.com",
   "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
 }
 ```
 
-**Invalid/expired `401`:** empty body.
+> A new `Set-Cookie: refresh_token=...` is also sent (rotation).
+
+**Invalid/expired `401`:** empty body (cookie cleared on server side too).
 
 **TypeScript example:**
 ```typescript
-async function refreshToken(oldRefreshToken: string): Promise<AuthResponse | null> {
+async function refreshAccessToken(): Promise<string | null> {
   const res = await fetch(`${BASE}/api/v1/auth/refresh`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refreshToken: oldRefreshToken })
+    credentials: "include" // ← required for cross-origin cookies
   });
   if (!res.ok) return null;
   const data = await res.json();
-  localStorage.setItem("token", data.token);
-  localStorage.setItem("refreshToken", data.refreshToken);
-  return data;
+  return data.token; // store in memory, not localStorage
 }
 ```
 
 > Refresh token expires in **7 days**. After that, user must re-login.
+
+---
+
+### Logout
+
+Revokes the refresh token and clears the cookie.
+
+```
+POST /api/v1/auth/logout
+```
+
+**Success `200`:**
+```json
+{
+  "message": "Logged out"
+}
+```
 
 ---
 
@@ -229,31 +243,36 @@ The server broadcasts every message to all connected clients in the **GlobalGrou
 ```typescript
 import * as signalR from "@microsoft/signalr";
 
+// Store access token in memory (not localStorage — XSS-safe)
+let accessToken: string | null = null;
+
 const BASE = process.env.NODE_ENV === "production"
   ? "https://chatapp-production-d621.up.railway.app"
   : "http://localhost:5111";
 
+// Get access token via refresh (uses HttpOnly cookie automatically)
+async function getToken(): Promise<string | null> {
+  if (accessToken) return accessToken;
+  const res = await fetch(`${BASE}/api/v1/auth/refresh`, {
+    method: "POST",
+    credentials: "include"
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  accessToken = data.token;
+  return accessToken;
+}
+
 const connection = new signalR.HubConnectionBuilder()
   .withUrl(`${BASE}/hub/chat`, {
-    accessTokenFactory: () => localStorage.getItem("token") ?? ""
+    accessTokenFactory: () => accessToken ?? ""
   })
   .withAutomaticReconnect()
   .build();
 
-// Refresh token on reconnect if token expired
+// Get new token on reconnect
 connection.onreconnecting(async () => {
-  const oldRefresh = localStorage.getItem("refreshToken");
-  if (!oldRefresh) return;
-  const res = await fetch(`${BASE}/api/v1/auth/refresh`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refreshToken: oldRefresh })
-  });
-  if (res.ok) {
-    const data = await res.json();
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("refreshToken", data.refreshToken);
-  }
+  accessToken = await getToken();
 });
 
 await connection.start();

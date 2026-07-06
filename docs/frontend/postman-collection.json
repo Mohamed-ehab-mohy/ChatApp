@@ -16,11 +16,7 @@
       "value": "",
       "type": "string"
     },
-    {
-      "key": "refreshToken",
-      "value": "",
-      "type": "string"
-    }
+
   ],
   "auth": {
     "type": "bearer",
@@ -47,7 +43,6 @@
                   "var jsonData = pm.response.json();",
                   "if (jsonData.token) {",
                   "  pm.collectionVariables.set('token', jsonData.token);",
-                  "  pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -83,7 +78,6 @@
                   "var jsonData = pm.response.json();",
                   "if (jsonData.token) {",
                   "  pm.collectionVariables.set('token', jsonData.token);",
-                  "  pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -131,7 +125,7 @@
     },
     {
       "name": "Refresh Token",
-      "description": "Refresh expired JWT token without re-login. Uses stored refreshToken variable.",
+      "description": "Refresh expired JWT token. Reads HttpOnly cookie automatically — no body needed. Ensure Postman cookie jar has the refresh_token cookie (from Register/Login).",
       "item": [
         {
           "name": "Refresh",
@@ -143,7 +137,6 @@
                   "var jsonData = pm.response.json();",
                   "if (jsonData.token) {",
                   "  pm.collectionVariables.set('token', jsonData.token);",
-                  "  pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -152,20 +145,29 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
-            },
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/refresh",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "auth", "refresh"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Logout",
+      "description": "Revoke refresh token and clear the cookie.",
+      "item": [
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "logout"]
             }
           }
         }

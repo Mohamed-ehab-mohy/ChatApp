@@ -15,11 +15,11 @@ Hosting:     Railway.app (Docker) + PostgreSQL (Railway managed)
 ### AuthResponse
 ```typescript
 interface AuthResponse {
-  token: string;        // JWT Bearer token, expires in 60 minutes
-  refreshToken: string; // Opaque refresh token, expires in 7 days (rotated on use)
-  email: string;        // User's email address
-  userId: string;       // GUID
+  token: string;   // JWT Bearer token, expires in 60 minutes
+  email: string;   // User's email address
+  userId: string;  // GUID
 }
+// Refresh token is returned via Set-Cookie HttpOnly cookie (not in body)
 ```
 
 ### RegisterRequest
@@ -84,14 +84,22 @@ Body: LoginRequest
 ### 2.3 Refresh Token
 ```
 POST /api/v1/auth/refresh
-Content-Type: application/json
-Body: { refreshToken: string }
+(No body — refresh token read from HttpOnly cookie)
 
-200 → AuthResponse (new token + new refresh token, old one revoked)
-401 → (empty body)
+200 → AuthResponse (new access token, new refresh_token cookie sent)
+401 → (empty body, cookie cleared)
 ```
 
-### 2.4 Get Messages
+> Frontend must send `credentials: "include"` on cross-origin requests.
+
+### 2.4 Logout
+```
+POST /api/v1/auth/logout
+
+200 → { message: "Logged out" }
+```
+
+### 2.5 Get Messages
 ```
 GET /api/v1/messages?limit={number}
 Authorization: Bearer {token}
