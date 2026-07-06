@@ -3,3 +3,8 @@ obj/
 appsettings.Development.json
 *.log
 .vs/
+*.db
+*.db-shm
+*.db-wal
+server.log
+server.err
