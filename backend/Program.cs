@@ -19,17 +19,31 @@ var builder = WebApplication.CreateBuilder(args);
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()!;
 builder.Services.AddSingleton(jwtSettings);
 
-var connStr = builder.Configuration.GetConnectionString("DefaultConnection");
-var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
-if (!string.IsNullOrEmpty(databaseUrl))
+string NormalizeConnectionString(string? connStr)
 {
-    Console.WriteLine($"[ChatApp] Using DATABASE_URL");
-    connStr = databaseUrl;
+    if (string.IsNullOrEmpty(connStr))
+        throw new InvalidOperationException("Connection string is not configured. Set ConnectionStrings:DefaultConnection or DATABASE_URL.");
+
+    if (connStr.StartsWith("postgresql://") || connStr.StartsWith("postgres://"))
+    {
+        var u = new Uri(connStr);
+        var userInfo = u.UserInfo?.Split(':') ?? [];
+        var host = u.Host;
+        var port = u.IsDefaultPort ? "5432" : u.Port.ToString();
+        var db = u.AbsolutePath.TrimStart('/');
+        var user = userInfo.Length > 0 ? userInfo[0] : "";
+        var pass = userInfo.Length > 1 ? userInfo[1] : "";
+        return $"Host={host};Port={port};Database={db};Username={user};Password={pass};SSL Mode=Require;Trust Server Certificate=true";
+    }
+
+    return connStr;
 }
-else
-{
-    Console.WriteLine($"[ChatApp] Using ConnectionStrings:DefaultConnection");
-}
+
+var connStr = NormalizeConnectionString(
+    Environment.GetEnvironmentVariable("DATABASE_URL")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection"));
+
+Console.WriteLine($"[ChatApp] Database: {(connStr.Contains("railway") ? "Railway (cloud)" : "Local")}");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connStr));
