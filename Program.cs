@@ -30,7 +30,12 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
 })
 .AddEntityFrameworkStores<AppDbContext>();
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+})
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -80,6 +85,20 @@ builder.Services.AddApiVersioning(options =>
     );
 });
 
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = 401;
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        context.Response.StatusCode = 403;
+        return Task.CompletedTask;
+    };
+});
+
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
@@ -97,8 +116,14 @@ var app = builder.Build();
 
 app.Use(async (context, next) =>
 {
-    context.Response.Headers["Content-Security-Policy"] =
-        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'";
+    if (!context.Request.Path.StartsWithSegments("/hub"))
+    {
+        context.Response.Headers["Content-Security-Policy"] =
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'";
+    }
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["Referrer-Policy"] = "no-referrer";
     await next();
 });
 

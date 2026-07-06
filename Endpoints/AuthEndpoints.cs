@@ -33,7 +33,7 @@ public static class AuthEndpoints
                 Email = user.Email!,
                 UserId = user.Id
             });
-        });
+        }).AllowAnonymous();
 
         group.MapPost("/login", async (
             LoginRequest request,
@@ -61,6 +61,6 @@ public static class AuthEndpoints
                 Email = user.Email!,
                 UserId = user.Id
             });
-        });
+        }).AllowAnonymous();
     }
 }

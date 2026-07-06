@@ -32,8 +32,21 @@ public class ChatHub : Hub
 
     public async Task SendMessage(string content)
     {
+        if (string.IsNullOrWhiteSpace(content))
+            return;
+
+        if (content.Length > 1000)
+            return;
+
         var cleanContent = _sanitizer.Sanitize(content);
-        var userId = Context.UserIdentifier!;
+
+        if (string.IsNullOrWhiteSpace(cleanContent))
+            return;
+
+        var userId = Context.UserIdentifier;
+        if (userId is null)
+            return;
+
         var email = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "";
 
         var message = new Message

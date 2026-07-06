@@ -10,6 +10,8 @@ public static class MessageEndpoints
     {
         group.MapGet("/", async (AppDbContext db, int limit = 50) =>
         {
+            limit = Math.Clamp(limit, 1, 200);
+
             var messages = await db.Messages
                 .OrderByDescending(m => m.SentAt)
                 .Take(limit)
