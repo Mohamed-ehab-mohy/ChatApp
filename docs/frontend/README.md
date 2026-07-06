@@ -14,14 +14,14 @@
 
 ## Authentication Flow
 
-1. **Register** or **Login** → receive `{ token, email, userId }` in **body**
-2. The **refresh token** is set as an **HttpOnly cookie** (`refresh_token`) — JS cannot read it
+1. **Register** or **Login** with `credentials: "include"` → receive `{ token, email, userId }` in **body** + `Set-Cookie: refresh_token=...` (**HttpOnly**)
+2. The **refresh token** is in an **HttpOnly cookie** — JS cannot read it (XSS-safe)
 3. Store the **access token** in memory (not localStorage!) — re-fetch from `/refresh` on page reload
 4. Send access token as `Authorization: Bearer <token>` on all REST requests
 5. For SignalR, pass token as `?access_token=<token>` query param
-6. When the access token expires (60 min), call **Refresh** — the browser auto-sends the cookie
+6. When the access token expires (60 min), call **Refresh** with `credentials: "include"` — the browser auto-sends the cookie
 
-> **Access token expires in 60 minutes.** The HttpOnly cookie refresh token expires in **7 days** and is rotated on each use. This prevents XSS from stealing the refresh token.
+> **Access token expires in 60 minutes.** The HttpOnly cookie refresh token expires in **7 days** and is rotated on each use. All auth fetch calls MUST use `credentials: "include"` for the cookie to be set/sent. This prevents XSS from stealing the refresh token.
 
 ---
 
@@ -57,6 +57,18 @@ Content-Type: application/json
 ```
 
 > A `Set-Cookie: refresh_token=...; HttpOnly; Secure; SameSite=None; Path=/api/v1/auth; Max-Age=604800` header is also sent.
+
+**TypeScript example (must use `credentials: "include"`):**
+```typescript
+const res = await fetch(`${BASE}/api/v1/auth/register`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email: "user@example.com", password: "Test123!" }),
+  credentials: "include" // ← REQUIRED for the Set-Cookie to work cross-origin
+});
+const { token, email, userId } = await res.json();
+// Store `token` in a JS variable (NOT localStorage)
+```
 
 **Validation error `400`:**
 ```json
@@ -96,6 +108,8 @@ Content-Type: application/json
 |-------|------|
 | `email` | Required, valid email format |
 | `password` | Required |
+
+**Must use `credentials: "include"`** — same as Register.
 
 **Success `200`:** (same shape as Register, also sets `refresh_token` cookie)
 

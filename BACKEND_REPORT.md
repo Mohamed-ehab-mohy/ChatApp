@@ -86,7 +86,9 @@ Client (React)  ─── REST/HTTPS ───> .NET Minimal API ───> Post
 - **CSP**: Applied on API routes (excluded for SignalR hub, Scalar, OpenAPI)
 - **Rate Limiting**: 10 requests/minute on auth endpoints (returns 429)
 - **Security Headers**: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` on all routes
-- **CORS**: Configurable allowed origins, with `AllowCredentials()` for SignalR
+- **CORS**: Configurable allowed origins, with `AllowCredentials()` for SignalR + cross-origin cookies
+- **Refresh Token in HttpOnly Cookie**: XSS-safe — JS cannot read it, rotated on each use (7-day expiry)
+- **Logout**: Revokes refresh token server-side + clears the cookie
 - **JWT**: Bearer token validation, configurable issuer/audience/secret
 - **Global Exception Handler**: Catches all unhandled exceptions, returns JSON error response
 
