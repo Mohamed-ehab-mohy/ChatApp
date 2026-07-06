@@ -24,6 +24,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
 {
     options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireDigit = false;
 })
 .AddEntityFrameworkStores<AppDbContext>();
 
@@ -100,5 +103,11 @@ authGroup.MapAuthEndpoints();
 messageGroup.MapMessageEndpoints();
 
 app.MapHub<ChatHub>("/hub/chat");
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
 
 app.Run();
