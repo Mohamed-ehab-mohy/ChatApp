@@ -4,7 +4,8 @@
 
 ```
 Development: http://localhost:5111
-Production:  <TBD after deployment>
+Production:  https://chatapp-production-d621.up.railway.app
+Hosting:     Railway.app (Docker) + PostgreSQL (Railway managed)
 ```
 
 ---

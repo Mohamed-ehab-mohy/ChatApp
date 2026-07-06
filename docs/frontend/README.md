@@ -4,11 +4,13 @@
 
 | Item | Value |
 |------|-------|
-| **Base URL** | `http://localhost:5111` |
-| **API Docs (Scalar)** | `http://localhost:5111/scalar/v1` |
-| **OpenAPI Spec** | `http://localhost:5111/openapi/v1.json` |
+| **Base URL** | `https://chatapp-production-d621.up.railway.app` |
+| **Local Base URL** | `http://localhost:5111` |
+| **API Docs (Scalar)** | `https://chatapp-production-d621.up.railway.app/scalar/v1` |
+| **OpenAPI Spec** | `https://chatapp-production-d621.up.railway.app/openapi/v1.json` |
 | **Postman Collection** | `./postman-collection.json` |
 | **SignalR Hub** | `/hub/chat` |
+| **Hosting** | Railway.app (PostgreSQL via Railway) |
 
 ## Authentication Flow
 
@@ -180,8 +182,12 @@ The server broadcasts every message to all connected clients in the **GlobalGrou
 ```typescript
 import * as signalR from "@microsoft/signalr";
 
+const BASE = process.env.NODE_ENV === "production"
+  ? "https://chatapp-production-d621.up.railway.app"
+  : "http://localhost:5111";
+
 const connection = new signalR.HubConnectionBuilder()
-  .withUrl("http://localhost:5111/hub/chat", {
+  .withUrl(`${BASE}/hub/chat`, {
     accessTokenFactory: () => token
   })
   .withAutomaticReconnect()

@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "ChatApp API",
-    "description": "Real-time chat application backend. Uses JWT Bearer auth for REST endpoints.\nSignalR hub at /hub/chat for real-time messaging.\n\nBase URL: http://localhost:5111\nScalar UI : http://localhost:5111/scalar/v1\nOpenAPI  : http://localhost:5111/openapi/v1.json",
+    "description": "Real-time chat application backend. Uses JWT Bearer auth for REST endpoints.\nSignalR hub at /hub/chat for real-time messaging.\n\nLOCAL:\nBase URL: http://localhost:5111\nScalar UI : http://localhost:5111/scalar/v1\nOpenAPI  : http://localhost:5111/openapi/v1.json\n\nPRODUCTION (Railway):\nBase URL: https://chatapp-production-d621.up.railway.app\nScalar UI : https://chatapp-production-d621.up.railway.app/scalar/v1\nOpenAPI  : https://chatapp-production-d621.up.railway.app/openapi/v1.json\n\nChange the baseUrl variable value to switch environments.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "ChatApp"
   },
