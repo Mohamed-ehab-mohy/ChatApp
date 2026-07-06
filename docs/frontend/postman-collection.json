@@ -8,7 +8,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:5111",
+      "value": "https://chatapp-production-d621.up.railway.app",
       "type": "string"
     },
     {
