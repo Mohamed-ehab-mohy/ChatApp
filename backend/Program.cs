@@ -22,7 +22,14 @@ builder.Services.AddSingleton(jwtSettings);
 var connStr = builder.Configuration.GetConnectionString("DefaultConnection");
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
 if (!string.IsNullOrEmpty(databaseUrl))
+{
+    Console.WriteLine($"[ChatApp] Using DATABASE_URL");
     connStr = databaseUrl;
+}
+else
+{
+    Console.WriteLine($"[ChatApp] Using ConnectionStrings:DefaultConnection");
+}
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connStr));
