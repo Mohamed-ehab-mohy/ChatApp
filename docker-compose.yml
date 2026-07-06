@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: chatapp-db
+    environment:
+      POSTGRES_DB: chatapp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-chatapp123}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./backend
+    container_name: chatapp-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=postgres;Database=chatapp;Username=postgres;Password=${DB_PASSWORD:-chatapp123}
+      JwtSettings__SecretKey: ${JWT_SECRET:-CHANGE_THIS_TO_A_SECRET_KEY_AT_LEAST_32_CHARS_LONG}
+      AllowedOrigins__0: http://localhost:5173
+      AllowedOrigins__1: http://localhost:3000
+      AllowedOrigins__2: http://localhost:5111
+    ports:
+      - "5111:8080"
+    restart: unless-stopped
+
+volumes:
+  pgdata:

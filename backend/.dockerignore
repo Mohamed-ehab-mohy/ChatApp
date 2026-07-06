@@ -2,3 +2,8 @@ bin/
 obj/
 .git/
 .gitignore
+*.db
+*.db-shm
+*.db-wal
+server*.log
+server*.err
