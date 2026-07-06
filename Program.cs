@@ -150,7 +150,7 @@ app.MapScalarApiReference(options =>
 
 app.Use(async (context, next) =>
 {
-    if (!context.Request.Path.StartsWithSegments("/chat") && !context.Request.Path.StartsWithSegments("/scalar") && !context.Request.Path.StartsWithSegments("/openapi"))
+    if (!context.Request.Path.StartsWithSegments("/hub") && !context.Request.Path.StartsWithSegments("/scalar") && !context.Request.Path.StartsWithSegments("/openapi"))
     {
         context.Response.Headers["Content-Security-Policy"] =
             "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'";
