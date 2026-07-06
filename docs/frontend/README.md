@@ -14,12 +14,13 @@
 
 ## Authentication Flow
 
-1. **Register** or **Login** via REST → receive `{ token, email, userId }`
-2. Store the JWT token (localStorage / sessionStorage)
+1. **Register** or **Login** via REST → receive `{ token, refreshToken, email, userId }`
+2. Store both the JWT token and refreshToken (localStorage / sessionStorage)
 3. Send token as `Authorization: Bearer <token>` on all REST requests
 4. For SignalR, pass token as `?access_token=<token>` query param
+5. When token expires (60 min), call **Refresh** to get a new pair without re-login
 
-> **Token expires in 60 minutes.** Re-login to get a new one.
+> **Access token expires in 60 minutes.** Use the refresh endpoint (below) to get a new one.
 
 ---
 
@@ -49,6 +50,7 @@ Content-Type: application/json
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIs...",
+  "refreshToken": "base64-refresh-token",
   "email": "user@example.com",
   "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
 }
@@ -104,6 +106,51 @@ Content-Type: application/json
 ```
 
 **Unauthorized `401`:** empty body, no content.
+
+---
+
+### Refresh Token
+
+Extends the session without re-entering credentials. **Rotates** — old refresh token is revoked, a new pair is issued.
+
+```
+POST /api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "base64-encoded-refresh-token-from-register/login"
+}
+```
+
+**Success `200`:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "refreshToken": "new-base64-refresh-token",
+  "email": "user@example.com",
+  "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+}
+```
+
+**Invalid/expired `401`:** empty body.
+
+**TypeScript example:**
+```typescript
+async function refreshToken(oldRefreshToken: string): Promise<AuthResponse | null> {
+  const res = await fetch(`${BASE}/api/v1/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken: oldRefreshToken })
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  localStorage.setItem("token", data.token);
+  localStorage.setItem("refreshToken", data.refreshToken);
+  return data;
+}
+```
+
+> Refresh token expires in **7 days**. After that, user must re-login.
 
 ---
 
@@ -188,10 +235,26 @@ const BASE = process.env.NODE_ENV === "production"
 
 const connection = new signalR.HubConnectionBuilder()
   .withUrl(`${BASE}/hub/chat`, {
-    accessTokenFactory: () => token
+    accessTokenFactory: () => localStorage.getItem("token") ?? ""
   })
   .withAutomaticReconnect()
   .build();
+
+// Refresh token on reconnect if token expired
+connection.onreconnecting(async () => {
+  const oldRefresh = localStorage.getItem("refreshToken");
+  if (!oldRefresh) return;
+  const res = await fetch(`${BASE}/api/v1/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken: oldRefresh })
+  });
+  if (res.ok) {
+    const data = await res.json();
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("refreshToken", data.refreshToken);
+  }
+});
 
 await connection.start();
 

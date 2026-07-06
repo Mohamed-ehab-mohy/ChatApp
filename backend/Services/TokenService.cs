@@ -1,8 +1,11 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
+using ChatApp.Data;
 using ChatApp.Models;
 using ChatApp.Settings;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 namespace ChatApp.Services;
@@ -10,10 +13,12 @@ namespace ChatApp.Services;
 public class TokenService
 {
     private readonly JwtSettings _settings;
+    private readonly AppDbContext _db;
 
-    public TokenService(JwtSettings settings)
+    public TokenService(JwtSettings settings, AppDbContext db)
     {
         _settings = settings;
+        _db = db;
     }
 
     public string GenerateToken(AppUser user)
@@ -37,5 +42,34 @@ public class TokenService
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    public async Task<string> GenerateRefreshToken(AppUser user)
+    {
+        var rt = new RefreshToken
+        {
+            Id = Guid.NewGuid(),
+            Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
+            UserId = user.Id,
+            ExpiresAt = DateTime.UtcNow.AddDays(7)
+        };
+
+        _db.RefreshTokens.Add(rt);
+        await _db.SaveChangesAsync();
+
+        return rt.Token;
+    }
+
+    public async Task<RefreshToken?> ValidateRefreshToken(string token)
+    {
+        return await _db.RefreshTokens
+            .Include(rt => rt.User)
+            .FirstOrDefaultAsync(rt => rt.Token == token && rt.IsActive);
+    }
+
+    public async Task RevokeRefreshToken(RefreshToken rt)
+    {
+        rt.RevokedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
     }
 }

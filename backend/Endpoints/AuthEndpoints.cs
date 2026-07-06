@@ -27,9 +27,11 @@ public static class AuthEndpoints
                 return Results.BadRequest(result.Errors.Select(e => e.Description));
 
             var token = tokenService.GenerateToken(user);
+            var refreshToken = await tokenService.GenerateRefreshToken(user);
             return Results.Ok(new AuthResponse
             {
                 Token = token,
+                RefreshToken = refreshToken,
                 Email = user.Email!,
                 UserId = user.Id
             });
@@ -55,9 +57,37 @@ public static class AuthEndpoints
                 return Results.Unauthorized();
 
             var token = tokenService.GenerateToken(user);
+            var refreshToken = await tokenService.GenerateRefreshToken(user);
             return Results.Ok(new AuthResponse
             {
                 Token = token,
+                RefreshToken = refreshToken,
+                Email = user.Email!,
+                UserId = user.Id
+            });
+        }).AllowAnonymous();
+
+        group.MapPost("/refresh", async (
+            RefreshTokenRequest request,
+            TokenService tokenService) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.RefreshToken))
+                return Results.BadRequest(new { errors = new[] { "Refresh token is required" } });
+
+            var stored = await tokenService.ValidateRefreshToken(request.RefreshToken);
+            if (stored is null)
+                return Results.Unauthorized();
+
+            var user = stored.User;
+            await tokenService.RevokeRefreshToken(stored);
+
+            var newToken = tokenService.GenerateToken(user);
+            var newRefreshToken = await tokenService.GenerateRefreshToken(user);
+
+            return Results.Ok(new AuthResponse
+            {
+                Token = newToken,
+                RefreshToken = newRefreshToken,
                 Email = user.Email!,
                 UserId = user.Id
             });

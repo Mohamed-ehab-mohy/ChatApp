@@ -15,9 +15,10 @@ Hosting:     Railway.app (Docker) + PostgreSQL (Railway managed)
 ### AuthResponse
 ```typescript
 interface AuthResponse {
-  token: string;   // JWT Bearer token, expires in 60 minutes
-  email: string;   // User's email address
-  userId: string;  // GUID
+  token: string;        // JWT Bearer token, expires in 60 minutes
+  refreshToken: string; // Opaque refresh token, expires in 7 days (rotated on use)
+  email: string;        // User's email address
+  userId: string;       // GUID
 }
 ```
 
@@ -80,7 +81,17 @@ Body: LoginRequest
 401 → (empty body)
 ```
 
-### 2.3 Get Messages
+### 2.3 Refresh Token
+```
+POST /api/v1/auth/refresh
+Content-Type: application/json
+Body: { refreshToken: string }
+
+200 → AuthResponse (new token + new refresh token, old one revoked)
+401 → (empty body)
+```
+
+### 2.4 Get Messages
 ```
 GET /api/v1/messages?limit={number}
 Authorization: Bearer {token}

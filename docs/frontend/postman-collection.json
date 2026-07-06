@@ -15,6 +15,11 @@
       "key": "token",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
     }
   ],
   "auth": {
@@ -42,6 +47,7 @@
                   "var jsonData = pm.response.json();",
                   "if (jsonData.token) {",
                   "  pm.collectionVariables.set('token', jsonData.token);",
+                  "  pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -77,6 +83,7 @@
                   "var jsonData = pm.response.json();",
                   "if (jsonData.token) {",
                   "  pm.collectionVariables.set('token', jsonData.token);",
+                  "  pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -119,6 +126,48 @@
               "body": ""
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "Refresh Token",
+      "description": "Refresh expired JWT token without re-login. Uses stored refreshToken variable.",
+      "item": [
+        {
+          "name": "Refresh",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.token) {",
+                  "  pm.collectionVariables.set('token', jsonData.token);",
+                  "  pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "refresh"]
+            }
+          }
         }
       ]
     },

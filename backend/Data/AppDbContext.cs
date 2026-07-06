@@ -9,6 +9,7 @@ public class AppDbContext : IdentityDbContext<AppUser>
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     public DbSet<Message> Messages => Set<Message>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -22,6 +23,16 @@ public class AppDbContext : IdentityDbContext<AppUser>
             entity.HasOne(m => m.Sender)
                   .WithMany()
                   .HasForeignKey(m => m.SenderId);
+        });
+
+        builder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasKey(rt => rt.Id);
+            entity.HasIndex(rt => rt.Token).IsUnique();
+            entity.Property(rt => rt.Token).IsRequired();
+            entity.HasOne(rt => rt.User)
+                  .WithMany()
+                  .HasForeignKey(rt => rt.UserId);
         });
     }
 }
