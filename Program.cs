@@ -1,8 +1,11 @@
 using System.Text;
 using Asp.Versioning;
 using ChatApp.Data;
+using ChatApp.Endpoints;
 using ChatApp.Models;
+using ChatApp.Services;
 using ChatApp.Settings;
+using FluentValidation;
 using Ganss.Xss;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -52,6 +55,9 @@ builder.Services.AddApiVersioning(options =>
     );
 });
 
+builder.Services.AddScoped<TokenService>();
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
 builder.Services.AddSingleton<HtmlSanitizer>(_ =>
 {
     var s = new HtmlSanitizer();
@@ -76,5 +82,7 @@ var versionSet = app.NewApiVersionSet()
 var v1 = app.MapGroup("/api/v1").WithApiVersionSet(versionSet);
 var authGroup = v1.MapGroup("/auth");
 var messageGroup = v1.MapGroup("/messages");
+
+authGroup.MapAuthEndpoints();
 
 app.Run();
