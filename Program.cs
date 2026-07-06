@@ -58,7 +58,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
-builder.Services.AddCors();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? ["http://localhost:5173"])
+              .AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+    });
+});
+
 builder.Services.AddSignalR();
 
 builder.Services.AddApiVersioning(options =>
@@ -86,7 +95,14 @@ builder.Services.AddSingleton<HtmlSanitizer>(_ =>
 
 var app = builder.Build();
 
-app.UseCors();
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["Content-Security-Policy"] =
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'";
+    await next();
+});
+
+app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
