@@ -257,6 +257,34 @@ dotnet run -c Release
 - `http://localhost:5173` (Vite)
 - `http://localhost:3000` (Create React App)
 
+## Production (Railway)
+
+| Item | Value |
+|------|-------|
+| **API Base URL** | `https://chatapp-production-d621.up.railway.app` |
+| **Scalar Docs** | `https://chatapp-production-d621.up.railway.app/scalar/v1` |
+| **Health Check** | `https://chatapp-production-d621.up.railway.app/health` |
+
+**Railway env vars needed** (set in Railway Dashboard → Variables):
+| Key | Value |
+|-----|-------|
+| `JwtSettings__SecretKey` | Your 64-char secure random key |
+| `AllowedOrigins__0` | `https://<your-frontend-domain>` (after frontend deploy) |
+
+> Rate limiting: 10 requests/minute on `/auth/*` endpoints. Returns `429` if exceeded.
+
+---
+
+## Global Error Handling
+
+All unhandled exceptions return:
+```json
+{
+  "errors": ["An error occurred"]
+}
+```
+In development mode, the actual error message is shown.
+
 ---
 
 ## Related Files

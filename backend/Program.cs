@@ -1,4 +1,5 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using Asp.Versioning;
 using ChatApp.Data;
 using ChatApp.Endpoints;
@@ -10,6 +11,7 @@ using FluentValidation;
 using Ganss.Xss;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
@@ -100,6 +102,18 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("AuthPolicy", opt =>
+    {
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.PermitLimit = 10;
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit = 0;
+    });
+    options.RejectionStatusCode = 429;
+});
+
 builder.Services.AddSignalR();
 
 builder.Services.AddApiVersioning(options =>
@@ -168,11 +182,30 @@ builder.Services.AddSingleton<HtmlSanitizer>(_ =>
 
 var app = builder.Build();
 
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+        context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+        var msg = app.Environment.IsDevelopment() ? ex.Message : "An error occurred";
+        await context.Response.WriteAsync(
+            System.Text.Json.JsonSerializer.Serialize(new { errors = new[] { msg } }));
+    }
+});
+
 app.MapOpenApi();
 app.MapScalarApiReference(options =>
 {
     options.WithTitle("ChatApp API");
 });
+
+app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
 
 app.Use(async (context, next) =>
 {
@@ -187,6 +220,7 @@ app.Use(async (context, next) =>
     await next();
 });
 
+app.UseRateLimiter();
 app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
@@ -197,7 +231,7 @@ var versionSet = app.NewApiVersionSet()
     .Build();
 
 var v1 = app.MapGroup("/api/v1").WithApiVersionSet(versionSet);
-var authGroup = v1.MapGroup("/auth");
+var authGroup = v1.MapGroup("/auth").RequireRateLimiting("AuthPolicy");
 var messageGroup = v1.MapGroup("/messages").RequireAuthorization();
 
 authGroup.MapAuthEndpoints();
