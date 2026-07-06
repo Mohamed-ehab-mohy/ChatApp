@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -102,6 +103,33 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Info = new()
+        {
+            Title = "ChatApp API",
+            Description = "Real-time chat application with SignalR",
+            Version = "v1"
+        };
+
+        var scheme = new Microsoft.OpenApi.OpenApiSecurityScheme
+        {
+            Type = Microsoft.OpenApi.SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            Description = "Enter your JWT token"
+        };
+        document.Components ??= new();
+        if (document.Components.SecuritySchemes is null)
+            document.Components.SecuritySchemes = new Dictionary<string, Microsoft.OpenApi.IOpenApiSecurityScheme>();
+        document.Components.SecuritySchemes["Bearer"] = scheme;
+
+        return Task.CompletedTask;
+    });
+});
+
 builder.Services.AddSingleton<HtmlSanitizer>(_ =>
 {
     var s = new HtmlSanitizer();
@@ -114,9 +142,15 @@ builder.Services.AddSingleton<HtmlSanitizer>(_ =>
 
 var app = builder.Build();
 
+app.MapOpenApi();
+app.MapScalarApiReference(options =>
+{
+    options.WithTitle("ChatApp API");
+});
+
 app.Use(async (context, next) =>
 {
-    if (!context.Request.Path.StartsWithSegments("/hub"))
+    if (!context.Request.Path.StartsWithSegments("/chat") && !context.Request.Path.StartsWithSegments("/scalar") && !context.Request.Path.StartsWithSegments("/openapi"))
     {
         context.Response.Headers["Content-Security-Policy"] =
             "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'";
