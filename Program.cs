@@ -68,4 +68,13 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
+var versionSet = app.NewApiVersionSet()
+    .HasApiVersion(new ApiVersion(1.0))
+    .ReportApiVersions()
+    .Build();
+
+var v1 = app.MapGroup("/api/v1").WithApiVersionSet(versionSet);
+var authGroup = v1.MapGroup("/auth");
+var messageGroup = v1.MapGroup("/messages");
+
 app.Run();
