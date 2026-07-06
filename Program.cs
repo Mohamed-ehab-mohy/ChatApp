@@ -2,6 +2,7 @@ using System.Text;
 using Asp.Versioning;
 using ChatApp.Data;
 using ChatApp.Endpoints;
+using ChatApp.Hubs;
 using ChatApp.Models;
 using ChatApp.Services;
 using ChatApp.Settings;
@@ -38,6 +39,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = jwtSettings.Issuer,
             ValidAudience = jwtSettings.Audience,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey))
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hub/chat"))
+                    context.Token = accessToken;
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -84,5 +97,8 @@ var authGroup = v1.MapGroup("/auth");
 var messageGroup = v1.MapGroup("/messages");
 
 authGroup.MapAuthEndpoints();
+messageGroup.MapMessageEndpoints();
+
+app.MapHub<ChatHub>("/hub/chat");
 
 app.Run();
