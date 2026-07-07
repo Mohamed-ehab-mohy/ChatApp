@@ -6,6 +6,7 @@
 |------|-------|
 | **Base URL** | `https://chatapp-production-d621.up.railway.app` |
 | **Local Base URL** | `http://localhost:5111` |
+| **Frontend (Production)** | `https://signalr-chat-room.pages.dev` |
 | **API Docs (Scalar)** | `https://chatapp-production-d621.up.railway.app/scalar/v1` |
 | **OpenAPI Spec** | `https://chatapp-production-d621.up.railway.app/openapi/v1.json` |
 | **Postman Collection** | `./postman-collection.json` |
@@ -56,7 +57,7 @@ Content-Type: application/json
 }
 ```
 
-> A `Set-Cookie: refresh_token=...; HttpOnly; Secure; SameSite=None; Path=/api/v1/auth; Max-Age=604800` header is also sent.
+> A `Set-Cookie: refresh_token=...; HttpOnly; Secure; SameSite=None; Path=/; Max-Age=604800; Partitioned` header is also sent.
 
 **TypeScript example (must use `credentials: "include"`):**
 ```typescript
@@ -463,6 +464,7 @@ dotnet run -c Release
 | Item | Value |
 |------|-------|
 | **API Base URL** | `https://chatapp-production-d621.up.railway.app` |
+| **Frontend URL** | `https://signalr-chat-room.pages.dev` |
 | **Scalar Docs** | `https://chatapp-production-d621.up.railway.app/scalar/v1` |
 | **Health Check** | `https://chatapp-production-d621.up.railway.app/health` |
 
@@ -470,7 +472,7 @@ dotnet run -c Release
 | Key | Value |
 |-----|-------|
 | `JwtSettings__SecretKey` | Your 64-char secure random key |
-| `AllowedOrigins__0` | `https://<your-frontend-domain>` (after frontend deploy) |
+| `AllowedOrigins__0` | `https://signalr-chat-room.pages.dev` |
 
 > Rate limiting: 10 requests/minute on `/auth/*` endpoints. Returns `429` if exceeded.
 
