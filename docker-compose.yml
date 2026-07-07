@@ -31,6 +31,7 @@ services:
       AllowedOrigins__0: http://localhost:5173
       AllowedOrigins__1: http://localhost:3000
       AllowedOrigins__2: http://localhost:5111
+      AllowedOrigins__3: https://2b3ba020.signalr-chat-room.pages.dev
     ports:
       - "5111:8080"
     restart: unless-stopped
