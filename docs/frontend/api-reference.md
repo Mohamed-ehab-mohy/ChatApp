@@ -55,6 +55,31 @@ interface SendMessageRequest {
 }
 ```
 
+### SubscribeRequest
+```typescript
+interface SubscribeRequest {
+  endpoint: string;  // Push endpoint URL from browser
+  p256dh: string;    // Client public key (base64)
+  auth: string;      // Auth secret (base64)
+}
+```
+
+### UnsubscribeRequest
+```typescript
+interface UnsubscribeRequest {
+  endpoint: string;  // The endpoint to remove
+}
+```
+
+### PushNotificationPayload (Server → Service Worker)
+```typescript
+interface PushNotificationPayload {
+  title: string;     // Sender email
+  body: string;      // Message content (sanitized)
+  url: string;       // URL to open on click (default: "/")
+}
+```
+
 ---
 
 ## 2. Endpoints
@@ -99,7 +124,39 @@ POST /api/v1/auth/logout
 200 → { message: "Logged out" }
 ```
 
-### 2.5 Get Messages
+### 2.5 Get VAPID Public Key
+```
+GET /api/v1/notifications/public-key
+Authorization: Bearer {token}
+
+200 → { publicKey: string }
+401 → (empty body)
+```
+
+### 2.6 Subscribe to Push Notifications
+```
+POST /api/v1/notifications/subscribe
+Content-Type: application/json
+Authorization: Bearer {token}
+Body: { endpoint: string, p256dh: string, auth: string }
+
+200 → { message: "Subscribed" }
+400 → { errors: { Endpoint: [...], P256DH: [...], Auth: [...] } }
+401 → (empty body)
+```
+
+### 2.7 Unsubscribe from Push Notifications
+```
+POST /api/v1/notifications/unsubscribe
+Content-Type: application/json
+Authorization: Bearer {token}
+Body: { endpoint: string }
+
+200 → { message: "Unsubscribed" }
+401 → (empty body)
+```
+
+### 2.8 Get Messages
 ```
 GET /api/v1/messages?limit={number}
 Authorization: Bearer {token}
@@ -172,6 +229,9 @@ connection.onclose(() => console.log("Disconnected"));
 | Login | email | Required, valid email | 400 |
 | Login | password | Required | 400 |
 | SendMessage (SignalR) | content | Max 1000 chars, not empty | Silently ignored |
+| Subscribe | endpoint | Required, valid URL | 400 |
+| Subscribe | p256dh | Required | 400 |
+| Subscribe | auth | Required | 400 |
 
 ---
 
@@ -181,7 +241,7 @@ connection.onclose(() => console.log("Disconnected"));
 |------|---------|-----------|
 | 200 | Success | All |
 | 400 | Bad Request / Validation | Register, Login |
-| 401 | Unauthorized | Messages, SignalR |
+| 401 | Unauthorized | Messages, SignalR, Notifications |
 | 404 | Not Found | Any invalid route |
 | 500 | Internal Error | Any |
 

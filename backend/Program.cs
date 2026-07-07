@@ -141,6 +141,10 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<PushNotificationService>();
+
+var vapidSettings = builder.Configuration.GetSection("VapidSettings").Get<VapidSettings>()!;
+builder.Services.AddSingleton(vapidSettings);
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 builder.Services.AddOpenApi(options =>
@@ -234,8 +238,11 @@ var v1 = app.MapGroup("/api/v1").WithApiVersionSet(versionSet);
 var authGroup = v1.MapGroup("/auth").RequireRateLimiting("AuthPolicy");
 var messageGroup = v1.MapGroup("/messages").RequireAuthorization();
 
+var notificationGroup = v1.MapGroup("/notifications").RequireAuthorization();
+
 authGroup.MapAuthEndpoints();
 messageGroup.MapMessageEndpoints();
+notificationGroup.MapNotificationEndpoints();
 
 app.MapHub<ChatHub>("/hub/chat");
 

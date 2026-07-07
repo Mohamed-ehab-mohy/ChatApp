@@ -1,5 +1,6 @@
 using ChatApp.Data;
 using ChatApp.Models;
+using ChatApp.Services;
 using Ganss.Xss;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
@@ -11,11 +12,13 @@ public class ChatHub : Hub
 {
     private readonly AppDbContext _db;
     private readonly HtmlSanitizer _sanitizer;
+    private readonly PushNotificationService _push;
 
-    public ChatHub(AppDbContext db, HtmlSanitizer sanitizer)
+    public ChatHub(AppDbContext db, HtmlSanitizer sanitizer, PushNotificationService push)
     {
         _db = db;
         _sanitizer = sanitizer;
+        _push = push;
     }
 
     public override async Task OnConnectedAsync()
@@ -68,5 +71,15 @@ public class ChatHub : Hub
             message.SenderEmail,
             message.SentAt
         });
+
+        var otherUserIds = _db.Users
+            .Where(u => u.Id != userId)
+            .Select(u => u.Id)
+            .ToList();
+
+        foreach (var uid in otherUserIds)
+        {
+            _ = _push.SendToUserAsync(uid, email, cleanContent, "/chat");
+        }
     }
 }

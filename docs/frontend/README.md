@@ -329,6 +329,111 @@ All non-hub, non-scalar, non-openapi responses include:
 
 ---
 
+## Push Notifications (PWA)
+
+The backend supports **Web Push notifications** for PWA integration. When a user sends a message, all other subscribed users receive a push notification (even if the app is closed).
+
+### Setup
+
+1. **Install** `@microsoft/signalr` and your preferred PWA/service-worker framework
+2. **Generate VAPID keys** on the backend (already pre-generated for dev):
+   - **Public Key**: `BANXPzDBlJhFcXq8js9i-OxEj39v8Rddd74yhdkNMG6Msj-xq6I6NjMd9awLEhV3WOUjmI1qjICihcUIWv19wdM`
+3. **Register service worker** and request notification permission
+
+### Endpoints
+
+#### Get VAPID Public Key
+
+```
+GET /api/v1/notifications/public-key
+Authorization: Bearer <token>
+```
+
+**Success `200`:**
+```json
+{
+  "publicKey": "BANXPzDBlJhFcXq8js9i-OxEj39v8Rddd74yhdkNMG6Msj-xq6I6NjMd9awLEhV3WOUjmI1qjICihcUIWv19wdM"
+}
+```
+
+#### Subscribe to Push Notifications
+
+Saves the browser's push subscription to the server.
+
+```
+POST /api/v1/notifications/subscribe
+Content-Type: application/json
+Authorization: Bearer <token>
+
+{
+  "endpoint": "https://fcm.googleapis.com/...",
+  "p256dh": "BC...",
+  "auth": "A..."
+}
+```
+
+**Success `200`:** `{ "message": "Subscribed" }`
+
+#### Unsubscribe from Push Notifications
+
+```
+POST /api/v1/notifications/unsubscribe
+Content-Type: application/json
+Authorization: Bearer <token>
+
+{
+  "endpoint": "https://fcm.googleapis.com/..."
+}
+```
+
+**Success `200`:** `{ "message": "Unsubscribed" }`
+
+### Frontend Integration Example
+
+```typescript
+const BASE = "https://chatapp-production-d621.up.railway.app";
+const VAPID_PUBLIC_KEY = "BANXPzDBlJhFcXq8js9i-OxEj39v8Rddd74yhdkNMG6Msj-xq6I6NjMd9awLEhV3WOUjmI1qjICihcUIWv19wdM";
+
+// 1. Get token from auth
+async function getToken(): Promise<string | null> { /* ... */ }
+
+// 2. Subscribe to push
+async function subscribeToPush(token: string) {
+  const registration = await navigator.serviceWorker.register("/sw.js");
+  const sub = await registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: VAPID_PUBLIC_KEY
+  });
+
+  await fetch(`${BASE}/api/v1/notifications/subscribe`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(sub.toJSON())
+  });
+}
+
+// 3. Service worker (sw.js) handles incoming notifications
+self.addEventListener("push", (event) => {
+  const data = event.data?.json() ?? {};
+  self.registration.showNotification(data.title, {
+    body: data.body,
+    data: { url: data.url }
+  });
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  clients.openWindow(event.notification.data?.url ?? "/");
+});
+```
+
+> Push notifications are automatically sent to all users except the message sender. Expired/removed subscriptions are cleaned up automatically.
+
+---
+
 ## API Versioning
 
 - Version is passed via query string or header: `?api-version=1.0` or `X-Api-Version: 1.0`
