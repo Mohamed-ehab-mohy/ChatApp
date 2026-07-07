@@ -3,6 +3,7 @@ using ChatApp.Models;
 using ChatApp.Services;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Http;
 
 namespace ChatApp.Endpoints;
 
@@ -10,29 +11,44 @@ public static class AuthEndpoints
 {
     private const string RefreshCookieName = "refresh_token";
 
+    private static string BuildCookieString(string name, string value, CookieOptions options)
+    {
+        var parts = new List<string>
+        {
+            $"{Uri.EscapeDataString(name)}={Uri.EscapeDataString(value)}",
+            $"Path={options.Path}",
+            $"Max-Age={(int)options.MaxAge!.Value.TotalSeconds}",
+            "HttpOnly",
+            "Secure",
+            "SameSite=None",
+            "Partitioned"
+        };
+
+        if (options.Expires.HasValue)
+            parts.Add($"Expires={options.Expires.Value:R}");
+
+        return string.Join("; ", parts);
+    }
+
     private static void SetRefreshCookie(HttpContext context, string token)
     {
-        context.Response.Cookies.Append(RefreshCookieName, token, new CookieOptions
+        var cookie = BuildCookieString(RefreshCookieName, token, new CookieOptions
         {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.None,
-            Path = "/api/v1/auth",
+            Path = "/",
             MaxAge = TimeSpan.FromDays(7)
         });
+        context.Response.Headers.Append("Set-Cookie", cookie);
     }
 
     private static void ClearRefreshCookie(HttpContext context)
     {
-        context.Response.Cookies.Append(RefreshCookieName, "", new CookieOptions
+        var cookie = BuildCookieString(RefreshCookieName, "", new CookieOptions
         {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.None,
-            Path = "/api/v1/auth",
+            Path = "/",
             MaxAge = TimeSpan.Zero,
             Expires = DateTimeOffset.UtcNow.AddDays(-1)
         });
+        context.Response.Headers.Append("Set-Cookie", cookie);
     }
 
     public static void MapAuthEndpoints(this RouteGroupBuilder group)
