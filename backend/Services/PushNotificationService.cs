@@ -1,4 +1,5 @@
 using ChatApp.Data;
+using ChatApp.DTOs.Notifications;
 using ChatApp.Settings;
 using WebPush;
 using Microsoft.EntityFrameworkCore;
@@ -55,22 +56,8 @@ public class PushNotificationService
         await _db.SaveChangesAsync();
     }
 
-    public async Task UnsubscribeAllAsync(string userId)
+    public async Task SendBatchAsync(List<PushSubDto> subs, string title, string body, string? url = null)
     {
-        var subs = await _db.PushSubscriptions
-            .Where(s => s.UserId == userId)
-            .ToListAsync();
-
-        _db.PushSubscriptions.RemoveRange(subs);
-        await _db.SaveChangesAsync();
-    }
-
-    public async Task SendToUserAsync(string userId, string title, string body, string? url = null)
-    {
-        var subs = await _db.PushSubscriptions
-            .Where(s => s.UserId == userId)
-            .ToListAsync();
-
         var payload = new PushNotificationPayload
         {
             Title = title,
@@ -91,14 +78,17 @@ public class PushNotificationService
                     _vapid.PrivateKey
                 ));
             }
-            catch (WebPushException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Gone || ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            catch (WebPushException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Gone
+                || ex.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
-                _db.PushSubscriptions.Remove(sub);
+                var dbSub = await _db.PushSubscriptions
+                    .FirstOrDefaultAsync(s => s.Endpoint == sub.Endpoint);
+                if (dbSub is not null)
+                    _db.PushSubscriptions.Remove(dbSub);
             }
         }
 
-        if (subs.Count > 0)
-            await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync();
     }
 
     private class PushNotificationPayload
