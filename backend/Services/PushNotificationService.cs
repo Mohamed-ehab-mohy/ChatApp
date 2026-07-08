@@ -11,12 +11,14 @@ public class PushNotificationService
     private readonly AppDbContext _db;
     private readonly VapidSettings _vapid;
     private readonly WebPushClient _client;
+    private readonly ILogger<PushNotificationService> _logger;
 
-    public PushNotificationService(AppDbContext db, VapidSettings vapid)
+    public PushNotificationService(AppDbContext db, VapidSettings vapid, ILogger<PushNotificationService> logger)
     {
         _db = db;
         _vapid = vapid;
         _client = new WebPushClient();
+        _logger = logger;
     }
 
     public string PublicKey => _vapid.PublicKey;
@@ -85,6 +87,11 @@ public class PushNotificationService
                     .FirstOrDefaultAsync(s => s.Endpoint == sub.Endpoint);
                 if (dbSub is not null)
                     _db.PushSubscriptions.Remove(dbSub);
+                _logger.LogWarning("Removed expired push subscription: {Endpoint}", sub.Endpoint);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send push notification to {Endpoint}: {Message}", sub.Endpoint, ex.Message);
             }
         }
 
