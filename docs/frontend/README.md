@@ -368,10 +368,14 @@ Authorization: Bearer <token>
 
 {
   "endpoint": "https://fcm.googleapis.com/...",
-  "p256dh": "BC...",
-  "auth": "A..."
+  "keys": {
+    "p256dh": "BC...",
+    "auth": "A..."
+  }
 }
 ```
+
+> Both `{ endpoint, p256dh, auth }` (flat) and `{ endpoint, keys: { p256dh, auth } }` (nested) formats are accepted.
 
 **Success `200`:** `{ "message": "Subscribed" }`
 

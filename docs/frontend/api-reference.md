@@ -59,8 +59,12 @@ interface SendMessageRequest {
 ```typescript
 interface SubscribeRequest {
   endpoint: string;  // Push endpoint URL from browser
-  p256dh: string;    // Client public key (base64)
-  auth: string;      // Auth secret (base64)
+  p256dh: string;    // Client public key (base64, flat format)
+  auth: string;      // Auth secret (base64, flat format)
+  keys?: {           // Alternative nested format (from PushSubscription.toJSON())
+    p256dh: string;
+    auth: string;
+  };
 }
 ```
 
@@ -138,7 +142,7 @@ Authorization: Bearer {token}
 POST /api/v1/notifications/subscribe
 Content-Type: application/json
 Authorization: Bearer {token}
-Body: { endpoint: string, p256dh: string, auth: string }
+Body: { endpoint: string, keys: { p256dh: string, auth: string } } or flat { endpoint, p256dh, auth }
 
 200 → { message: "Subscribed" }
 400 → { errors: { Endpoint: [...], P256DH: [...], Auth: [...] } }
