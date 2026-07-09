@@ -2,11 +2,11 @@
 
 > A production-grade real-time chat platform powered by **ASP.NET Core 10**, **SignalR**, and **PostgreSQL**, featuring a modern **React 19** frontend with **PWA push notifications**.
 
-**Live API:** `https://chatapp-production-d621.up.railway.app`
-
-**Live Demo:** `https://signalr-chat-room.pages.dev`
-
-**API Docs (Scalar):** `https://chatapp-production-d621.up.railway.app/scalar/v1`
+[![Live API](https://img.shields.io/badge/Live_API-Railway.app-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)](https://chatapp-production-d621.up.railway.app)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Cloudflare_Pages-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)](https://signalr-chat-room.pages.dev)
+[![API Docs](https://img.shields.io/badge/API_Docs-Scalar-7B3FE4?style=for-the-badge&logo=scalar&logoColor=white)](https://chatapp-production-d621.up.railway.app/scalar/v1)
+[![GitHub Backend](https://img.shields.io/badge/Backend_Repo-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Mohamed-ehab-mohy/ChatApp)
+[![GitHub Frontend](https://img.shields.io/badge/Frontend_Repo-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/ahmedzaki-me/signalr-chat-room)
 
 ---
 
@@ -293,16 +293,16 @@ Phase 11 — Production polish, fixes, and documentation
 
 ### Mohamed Ehab — Back-End Developer
 
-[![GitHub](https://img.shields.io/badge/GitHub-@Mohamed--ehab--mohy-181717?style=for-the-badge&logo=github)](https://github.com/Mohamed-ehab-mohy)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0077B5?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/mohamed-ehab-mohy)
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Mohamed-ehab-mohy "GitHub: Mohamed-ehab-mohy")
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/mohamed-ehab-mohy "LinkedIn: mohamed-ehab-mohy")
 
 Responsible for the **backend API**: authentication system, real-time SignalR hub, database design, security implementation, Docker containerization, and Railway deployment.
 
 ### Ahmed Zaki — Front-End Developer
 
-[![Portfolio](https://img.shields.io/badge/Portfolio-ahmedzaki.me-4285F4?style=for-the-badge&logo=google-chrome)](https://ahmedzaki.me)
-[![GitHub](https://img.shields.io/badge/GitHub-@ahmedzaki--me-181717?style=for-the-badge&logo=github)](https://github.com/ahmedzaki-me)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0077B5?style=for-the-badge&logo=linkedin)](https://linkedin.com/in/ahmedzaki-me)
+[![Portfolio](https://img.shields.io/badge/Portfolio-4285F4?style=for-the-badge&logo=google-chrome&logoColor=white)](https://ahmedzaki.me "Portfolio: ahmedzaki.me")
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/ahmedzaki-me "GitHub: ahmedzaki-me")
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://linkedin.com/in/ahmedzaki-me "LinkedIn: ahmedzaki-me")
 
 Responsible for the **React frontend**: modern UI with shadcn/ui components, SignalR client integration, PWA service worker, authentication flow, and Cloudflare Pages deployment.
 
